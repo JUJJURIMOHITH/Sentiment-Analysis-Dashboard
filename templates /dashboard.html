@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentiment Analysis Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --surface: #16161a;
+      --border: #2a2a30;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --positive: #22c55e;
+      --negative: #ef4444;
+      --neutral: #a1a1aa;
+      --accent: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .layout {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+
+    .input-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 0.9rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    textarea::placeholder { color: var(--muted); }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      margin-top: 1rem;
+      padding: 0.65rem 1.4rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+    }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-section {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .result-section.visible { display: block; }
+
+    .verdict {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .verdict-badge {
+      font-weight: 700;
+      font-size: 1.1rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      text-transform: capitalize;
+    }
+    .verdict-badge.positive { background: rgba(34, 197, 94, 0.2); color: var(--positive); }
+    .verdict-badge.negative { background: rgba(239, 68, 68, 0.2); color: var(--negative); }
+    .verdict-badge.neutral { background: rgba(161, 161, 170, 0.2); color: var(--neutral); }
+    .confidence-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .confidence-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+    }
+
+    .chart-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+    .bar-label {
+      width: 72px;
+      font-size: 0.85rem;
+      text-transform: capitalize;
+    }
+    .bar-track {
+      flex: 1;
+      height: 24px;
+      background: var(--bg);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease-out;
+    }
+    .bar-fill.positive { background: var(--positive); }
+    .bar-fill.negative { background: var(--negative); }
+    .bar-fill.neutral { background: var(--neutral); }
+    .bar-pct {
+      width: 48px;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .error-msg {
+      color: var(--negative);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .loading {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <h1>Sentiment Analysis Dashboard</h1>
+      <p class="subtitle">Classify movie or product reviews as positive, negative, or neutral. Powered by LSTM on IMDB.</p>
+    </header>
+
+    <section class="input-section">
+      <label for="review">Review text</label>
+      <textarea id="review" placeholder="Paste a movie or product review here..."></textarea>
+      <button type="button" class="btn" id="analyze">Analyze sentiment</button>
+      <p class="error-msg" id="error" role="alert"></p>
+      <p class="loading" id="loading" style="display: none;">Analyzing…</p>
+    </section>
+
+    <section class="result-section" id="result">
+      <div class="verdict">
+        <span class="verdict-badge" id="verdict-badge">—</span>
+        <span class="confidence-label">Confidence:</span>
+        <span class="confidence-value" id="confidence-value">—</span>
+      </div>
+      <div class="chart-title">Confidence scores</div>
+      <div class="bar-row">
+        <span class="bar-label">Positive</span>
+        <div class="bar-track">
+          <div class="bar-fill positive" id="bar-positive" style="width: 0%"></div>
+        </div>
+        <span class="bar-pct" id="pct-positive">0%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Negative</span>
+        <div class="bar-track">
+          <div class="bar-fill negative" id="bar-negative" style="width: 0%"></div>
+        </div>
+        <span class="bar-pct" id="pct-negative">0%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Neutral</span>
+        <div class="bar-track">
+          <div class="bar-fill neutral" id="bar-neutral" style="width: 0%"></div>
+        </div>
+        <span class="bar-pct" id="pct-neutral">0%</span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const reviewEl = document.getElementById('review');
+    const analyzeBtn = document.getElementById('analyze');
+    const errorEl = document.getElementById('error');
+    const loadingEl = document.getElementById('loading');
+    const resultSection = document.getElementById('result');
+    const verdictBadge = document.getElementById('verdict-badge');
+    const confidenceValue = document.getElementById('confidence-value');
+    const barPositive = document.getElementById('bar-positive');
+    const barNegative = document.getElementById('bar-negative');
+    const barNeutral = document.getElementById('bar-neutral');
+    const pctPositive = document.getElementById('pct-positive');
+    const pctNegative = document.getElementById('pct-negative');
+    const pctNeutral = document.getElementById('pct-neutral');
+
+    function showError(msg) {
+      errorEl.textContent = msg || '';
+      errorEl.style.display = msg ? 'block' : 'none';
+    }
+
+    function setLoading(on) {
+      loadingEl.style.display = on ? 'block' : 'none';
+      analyzeBtn.disabled = on;
+    }
+
+    function renderResult(data) {
+      verdictBadge.textContent = data.sentiment;
+      verdictBadge.className = 'verdict-badge ' + data.sentiment;
+      confidenceValue.textContent = (data.confidence * 100).toFixed(1) + '%';
+
+      const scores = data.scores;
+      const pPos = (scores.positive * 100).toFixed(1);
+      const pNeg = (scores.negative * 100).toFixed(1);
+      const pNeu = (scores.neutral * 100).toFixed(1);
+
+      barPositive.style.width = pPos + '%';
+      barNegative.style.width = pNeg + '%';
+      barNeutral.style.width = pNeu + '%';
+      pctPositive.textContent = pPos + '%';
+      pctNegative.textContent = pNeg + '%';
+      pctNeutral.textContent = pNeu + '%';
+
+      resultSection.classList.add('visible');
+    }
+
+    analyzeBtn.addEventListener('click', async function () {
+      const text = reviewEl.value.trim();
+      showError('');
+      if (!text) {
+        showError('Please enter some review text.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showError(data.error || 'Request failed');
+          return;
+        }
+        renderResult(data);
+      } catch (e) {
+        showError('Network error. Is the server running?');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
